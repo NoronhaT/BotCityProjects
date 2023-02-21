@@ -1,0 +1,338 @@
+from tqdm import tqdm
+from botcity.web import WebBot, Browser
+from botcity.web import By
+from bs4 import BeautifulSoup as soup
+import time
+import os
+import openai
+import ftfy
+
+### UTILIZE A PASTA RESOURCES JUNTO DO CÓDIGO
+
+alvo = 'virginia' #PERFIL SEM @ QUE OS SEGUIDORES SERÃO EXTRAÍDOS
+
+diretorio_atual = os.getcwd()
+diretorio_chave = diretorio_atual + '/Chave'
+diretorio_frases = diretorio_atual + '/Frases'
+
+
+def criar_diretorios():
+    # Checa se o diretório existe e o cria caso não.
+
+    if not os.path.exists(diretorio_atual + "/Frases"):
+        os.makedirs(diretorio_atual + "/Frases")
+        print('CRIANDO O DIRETÓRIO PARA Frases')
+    if not os.path.exists(diretorio_atual + '/Chave'):
+        os.makedirs(diretorio_atual + '/Chave')
+        print('CRIANDO O DIRETÓRIA PARA Chave')
+
+
+def user():
+    try:
+        print('Procurando pelo seu login')
+        print('-------------------------')
+        with open(diretorio_chave + '/user.txt', 'r') as key:
+            for i in key:
+                print('Usuário encontrado!')
+                print('-------------------')
+
+    except Exception:
+
+        print('Login não encontrado, insira novamente: ')
+        usuario_instagram = input('Insira seu nome de usuário:')
+        with open(diretorio_chave + '/user.txt', 'w', encoding='utf-8') as key:
+            key.write(usuario_instagram)
+
+
+def senha():
+    try:
+        print('Procurando pelo seu login')
+        print('-------------------------')
+        with open(diretorio_chave + '/pass.txt', 'r') as key:
+            for i in key:
+                print('senha encontrada!')
+                print('-------------------------')
+
+    except Exception:
+
+        print('Senha não encontrada, insira novamente: ')
+        print('-------------------------')
+        senha_instagram = input('Insira sua senha:')
+        with open(diretorio_chave + '/pass.txt', 'w', encoding='utf-8') as key:
+            key.write(senha_instagram)
+
+
+def chave_openia():
+    try:
+        print('Procurando pela chave da OpenIa')
+        print('-------------------------')
+        with open(diretorio_chave + '/chave.txt', 'r') as key:
+            for i in key:
+                print('Chave encontrada!' + '\n' + 'Prosseguindo com o programa.')
+
+    except Exception:
+
+        print('Chave não encontrada, é necessário inserir uma chave: ')
+        print('-------------------------')
+        chave = input('Insira chave:')
+        with open(diretorio_chave + '/chave.txt', 'w', encoding='utf-8') as key:
+            key.write(chave)
+
+
+def frase_tema():
+
+    print('---------------------------------------------')
+    frase = 'faça uma frase amistosa para um comentário em foto do instagram de um usuário, convidando este usuário a seguir meu perfil chamado de @iaescritora a inteligencia artificial.'
+    with open(diretorio_frases + '/texto.txt', 'w', encoding='utf-8') as theme:
+        theme.write(frase)
+
+
+# PARAMETROS
+
+try:
+    with open(diretorio_chave + '/user.txt', 'r') as userw:
+        for i in userw:
+            usuario_instagram = i
+    with open(diretorio_chave + '/pass.txt', 'r') as passw:
+        for i in passw:
+            senha_instagram = i
+
+    with open(diretorio_frases + '/texto.txt', 'r') as option:
+        for i in option:
+            texto = i
+
+except FileNotFoundError:
+    pass
+
+
+def openia():
+    chave = []
+    pergunta = []
+
+    with open(diretorio_frases + '/texto.txt', 'r') as assunto:
+        for i in assunto:
+            pergunta.append(i)
+
+    with open(diretorio_chave + '/chave.txt', 'r') as key:
+        for i in key:
+            chave.append(i)
+
+    openai.api_key = chave[0]
+    gpt_prompt = pergunta[0]
+    response = openai.Completion.create(
+        engine="text-davinci-003",
+        prompt=gpt_prompt,
+        temperature=0.5,
+        max_tokens=256,
+        top_p=1.0,
+        frequency_penalty=0.0,
+        presence_penalty=0.0
+    )
+    resposta = (response['choices'][0]['text'])
+
+    with open(diretorio_frases + '/openia.txt', 'w', encoding='utf-8') as codigo:
+        codigo.write(resposta)
+
+
+class Bot(WebBot):
+    def action(self, execution=None):
+
+        self.headless = False
+        self.driver_path = r"C:\bin\chromedriver.exe"
+        self.browse("https://www.instagram.com/")
+        self.maximize_window()
+
+        print(f'PÁGINA ACESSADA: {self.page_title()}')
+
+        self.wait(5000)
+        print('executando o login...')
+
+        try:
+
+            user = self.find_element('//*[@id="loginForm"]/div/div[1]/div/label/input', By.XPATH)
+            user.send_keys(usuario_instagram)
+
+            password = self.find_element('//*[@id="loginForm"]/div/div[2]/div/label/input', By.XPATH)
+            password.send_keys(senha_instagram)
+
+            self.enter()
+
+            self.wait(5000)
+
+            botao_nao = self.find_element(
+                selector="/html/body/div[2]/div/div/div/div[1]/div/div/div/div[1]/div[1]/div[2]/section/main/div/div/div/div/button",
+                by=By.XPATH)
+            botao_nao.click()
+
+            self.wait(10000)
+
+            botao_nao_dois = self.find_element(
+                selector='/html/body/div[2]/div/div/div/div[2]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div/div/div[3]/button[2]',
+                by=By.XPATH)
+            botao_nao_dois.click()
+
+            print('Login efetuado com sucesso!')
+
+
+
+            if self.find("notifica_coracao", matching=0.97, waiting_time=10000):
+                print('Limpando as notificações')
+                self.click()
+                self.key_esc()
+
+            print('---------------------------')
+            print(f'Iniciando busca pelo perfil selecionado:@{alvo} ')
+
+            url_seguidores = f'https://www.instagram.com/{alvo}/followers/'
+            print(url_seguidores)
+
+            self.browse(url_seguidores)
+
+            print(f'PÁGINA ACESSADA: {self.page_title()}')
+            print('Localizando seguidores...')
+
+            if self.find("x_seguidores", matching=0.97, waiting_time=10000):
+                print("Página de seguidores aberta")
+                time.sleep(10)
+
+                xpath_mae = self.find_element(
+                    '/html/body/div[2]/div/div/div/div[2]/div/div/div[1]/div/div[2]/div/div/div/div/div[2]/div/div',
+                    By.XPATH)
+                html_content = xpath_mae.get_attribute('outerHTML')
+
+                b_soup = soup(html_content, 'html.parser')
+                lista = b_soup.find_all('a', href=True)
+
+                lista_user = []
+
+                for tag in lista:
+                    follow = tag['href']
+                    follow = follow.replace('/', '')
+                    if follow not in lista_user:
+                        lista_user.append(follow)
+                print('Irei seguir os seguintes usuários:', lista_user, '\n'f"São: {len(lista_user)} usuários.")
+
+                try:
+                    for perfil in lista_user:
+
+                        url_user = f"https://www.instagram.com/{perfil}"
+                        self.browse(url_user)
+                        time.sleep(5)
+
+                        if self.find("seguindo", matching=0.97, waiting_time=10000):
+                            print(f'Eu já seguia o {perfil}. Vou passar para o próximo perfil.')
+                            continue
+
+                        if self.find_element(
+                                '/html/body/div[2]/div/div/div/div[1]/div/div/div/div[1]/div[1]/div[2]/section/main/div/header/section/div[1]/div[1]/div/div[1]/button',
+                                By.XPATH):
+                            self.find_element(
+                                '/html/body/div[2]/div/div/div/div[1]/div/div/div/div[1]/div[1]/div[2]/section/main/div/header/section/div[1]/div[1]/div/div[1]/button',
+                                By.XPATH).click()
+                            time.sleep(5)
+
+                            try:
+                                xpath_mae = self.find_element(
+                                    "/html/body",
+                                    By.XPATH)
+                                html_content = xpath_mae.get_attribute('outerHTML')
+                                b_soup = soup(html_content, 'html.parser')
+
+                                lista = b_soup.find_all('a', href=True)
+
+                                postagens = []
+
+                                for link in lista:
+                                    post = link['href']
+                                    if '/p/' in post:
+                                        postagens.append(post)
+
+                                postagens = postagens[-3:]
+
+                                for link_post in postagens:
+
+                                    url_post = f'https://www.instagram.com{link_post}'
+                                    print(f'Acessando: {url_post}')
+                                    self.browse(url_post)
+
+                                    time.sleep(5)
+                                    print('Curtindo...')
+
+                                    dot = self.find_element("_abl-", By.CLASS_NAME)
+                                    dot.click()
+
+                                    time.sleep(1)
+                                    self.key_esc()
+
+                                    self.tab()
+                                    self.space()
+
+                                    openia()
+                                    with open(diretorio_frases + '/openia.txt', 'r', encoding='utf-8') as codigo:
+                                        for i in codigo:
+                                            elogios = ftfy.fix_text(i)
+
+
+
+                                    print(f'Comentando...{elogios}')
+
+
+                                    self.tab()
+                                    self.space()
+
+                                    time.sleep(2)
+                                    self.paste(elogios)
+
+                                    self.tab()
+                                    self.enter()
+
+                                    time.sleep(3)
+
+
+                            except Exception:
+                                print(f'O perfil de: @{perfil} não tem ou ainda não permite que você veja as fotos.')
+                                print('-------------------------------------------------------------------------')
+
+                        else:
+                            print(f'Encontrei dificuldades com o perfil: @{perfil},vou passar para o próximo.')
+                            continue
+
+                except Exception:
+                    print('Um dos perfis acessado não existe mais...')
+                    for i in tqdm(range(600)):
+                        time.sleep(1)
+
+                    print('Reiniciando')
+                    return Bot.main()
+
+            print('Processo executado')
+            self.stop_browser()
+            for i in tqdm(range(1200)):
+                time.sleep(1)
+            print('Reiniciando')
+            return Bot.main()
+
+
+
+
+
+        except Exception:
+            print('Algo durante o processo falhou, tentando novamente em 1 minuto')
+            self.stop_browser()
+            for i in tqdm(range(60)):
+                time.sleep(1)
+
+            print('reiniciando')
+            return Bot.main()
+
+    def not_found(self, label):
+        print(f"Não foi encontrado o elemento: {label}")
+
+
+if __name__ == '__main__':
+    criar_diretorios()
+    user()
+    senha()
+    chave_openia()
+    frase_tema()
+    Bot.main()

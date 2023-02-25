@@ -1,3 +1,4 @@
+from selenium.webdriver.support.ui import Select
 from tqdm import tqdm
 from botcity.web import WebBot, Browser
 from botcity.web import By
@@ -7,9 +8,8 @@ import os
 import openai
 import ftfy
 
-### UTILIZE A PASTA RESOURCES JUNTO DO CÓDIGO
 
-alvo = 'virginia' #PERFIL SEM @ QUE OS SEGUIDORES SERÃO EXTRAÍDOS
+alvo = 'botcity_dev'
 
 diretorio_atual = os.getcwd()
 diretorio_chave = diretorio_atual + '/Chave'
@@ -82,7 +82,7 @@ def chave_openia():
 def frase_tema():
 
     print('---------------------------------------------')
-    frase = 'faça uma frase amistosa para um comentário em foto do instagram de um usuário, convidando este usuário a seguir meu perfil chamado de @iaescritora a inteligencia artificial.'
+    frase = 'faça um comentário amistoso no post de um usuário no instagram para que ele siga o perfil @iaescritora, que utiliza recursos de inteligência artificial e da @botcity_dev.'
     with open(diretorio_frases + '/texto.txt', 'w', encoding='utf-8') as theme:
         theme.write(frase)
 
@@ -140,7 +140,14 @@ class Bot(WebBot):
         self.headless = False
         self.driver_path = r"C:\bin\chromedriver.exe"
         self.browse("https://www.instagram.com/")
+
         self.maximize_window()
+
+        idioma = Select(self.find_element('/html/body/div[2]/div/div/div/div[1]/div/div/div/div[1]/section/footer/div/div[2]/div[1]/span/select',By.XPATH))
+        idioma.select_by_visible_text('English')
+
+      
+        
 
         print(f'PÁGINA ACESSADA: {self.page_title()}')
 
@@ -175,7 +182,7 @@ class Bot(WebBot):
 
 
 
-            if self.find("notifica_coracao", matching=0.97, waiting_time=10000):
+            if self.find( "notifica_coracao", matching=0.97, waiting_time=10000):
                 print('Limpando as notificações')
                 self.click()
                 self.key_esc()
@@ -191,7 +198,7 @@ class Bot(WebBot):
             print(f'PÁGINA ACESSADA: {self.page_title()}')
             print('Localizando seguidores...')
 
-            if self.find("x_seguidores", matching=0.97, waiting_time=10000):
+            if self.find( "x_seguidores", matching=0.97, waiting_time=10000):
                 print("Página de seguidores aberta")
                 time.sleep(10)
 
@@ -219,7 +226,7 @@ class Bot(WebBot):
                         self.browse(url_user)
                         time.sleep(5)
 
-                        if self.find("seguindo", matching=0.97, waiting_time=10000):
+                        if self.find( "seguindo", matching=0.97, waiting_time=10000):
                             print(f'Eu já seguia o {perfil}. Vou passar para o próximo perfil.')
                             continue
 
@@ -336,3 +343,4 @@ if __name__ == '__main__':
     chave_openia()
     frase_tema()
     Bot.main()
+
